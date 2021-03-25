@@ -20,9 +20,8 @@ def drop():
     cursor.execute('DROP TABLE IF EXISTS sub_sub_category;')
     cursor.execute('DROP TABLE IF EXISTS sessions;')
     cursor.execute('DROP TABLE IF EXISTS orders;')
-    cursor.execute('DROP TABLE IF EXISTS buids;')
     cursor.execute('DROP TABLE IF EXISTS profiles;')
-    cursor.execute('DROP TABLE IF EXISTS temp;')
+
 
 
 def products():
@@ -62,13 +61,6 @@ def sub_sub_category():
     print("Table created successfully")
 
 
-def temp():
-    cursor.execute("""
-        CREATE TABLE temp (orders varchar, number int);
-        """)
-    print("Table created successfully")
-
-
 def orders():
     cursor.execute("""
         CREATE TABLE orders (order_id serial PRIMARY KEY, session_id varchar, product_id varchar);
@@ -77,13 +69,13 @@ def orders():
 
 def profiles():
     cursor.execute("""
-        CREATE TABLE profiles (profile_id varchar PRIMARY KEY, buid_id varchar array, segment varchar, viewed_before varchar array, similars varchar array, previously_recommended varchar array);
+        CREATE TABLE profiles (profile_id varchar PRIMARY KEY);
         """)
     print("Table created successfully")
 
 def sessions():
     cursor.execute("""
-        CREATE TABLE sessions (session_id varchar PRIMARY KEY, buid_id varchar, session_start varchar, 
+        CREATE TABLE sessions (session_id varchar PRIMARY KEY, session_start varchar, 
         session_end varchar, has_sale varchar, bestelling varchar, segment varchar, preference_category varchar,
         preference_sub_cat varchar, preference_sub_sub_cat varchar)
         """)
@@ -99,7 +91,6 @@ def tabellen():
     sessions()
     orders()
     profiles()
-    temp()
 
 
 tabellen()
@@ -107,4 +98,3 @@ postgresConnection.commit()
 postgresConnection.close()
 print("Operation done successfully")
 postgresConnection.close()
-
