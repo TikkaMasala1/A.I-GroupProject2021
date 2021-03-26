@@ -21,6 +21,7 @@ def truncate():
     cursor.execute('TRUNCATE TABLE sub_category;')
     cursor.execute('TRUNCATE TABLE sub_sub_category;')
     cursor.execute('TRUNCATE TABLE orders;')
+    cursor.execute('TRUNCATE TABLE temp;')
 
 def prod_table():
     with open("products.csv", 'r') as f:
@@ -124,6 +125,17 @@ def order():
         SELECT product_id FROM products
         """)
 
+def temp():
+    cursor.execute("""
+      INSERT INTO temp(orders, number)
+        SELECT bestelling, COUNT(bestelling) AS value_occurrence 
+        FROM sessions
+        WHERE has_sale = 'True'
+        GROUP BY bestelling
+        ORDER BY value_occurrence DESC
+        LIMIT 50;
+    """)
+
 def table_insert():
     truncate()
     prod_table()
@@ -136,6 +148,7 @@ def table_insert():
     ins_sub_cat()
     ins_sub_sub_cat()
     order()
+    temp()
 
 
 

@@ -39,12 +39,9 @@ class Recom(Resource):
     def get(self, profileid, count, productid,rectype, sessionid):
         """ This function represents the handler for GET requests coming in
         through the API. It currently returns a random sample of products. """
-       # randcursor = database.products.aggregate([{ '$sample': { 'size': count } }])
-        #prodids = list(map(lambda x: x['_id'], list(randcursor)))
-        #return prodids, 200
-        """ This class represents the REST API that provides the recommendations for
-            the webshop. At the moment, the API simply returns a random set of products
-            to recommend."""
+        randcursor = database.products.aggregate([{ '$sample': { 'size': count } }])
+        prodids = list(map(lambda x: x['_id'], list(randcursor)))
+        return prodids, 200
         tel = 0
         prodids = []
         while tel != count:
