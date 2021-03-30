@@ -3,7 +3,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 '''Verbinden van pymongo en psycopg2 met python'''
 postgresConnection = psycopg2.connect(user="postgres",
-                                      password="groep6",
+                                      password="root",
                                       host="127.0.0.1",
                                       port="5432",
                                       database="huwebshop")
@@ -12,6 +12,8 @@ cursor = postgresConnection.cursor()
 print("Opened database successfully")
 
 ''' creeeren van tabellen & kolommen'''
+
+
 def drop():
     cursor.execute('DROP TABLE IF EXISTS products;')
     cursor.execute('DROP TABLE IF EXISTS brand;')
@@ -21,7 +23,6 @@ def drop():
     cursor.execute('DROP TABLE IF EXISTS sessions;')
     cursor.execute('DROP TABLE IF EXISTS orders;')
     cursor.execute('DROP TABLE IF EXISTS profiles;')
-
 
 
 def products():
@@ -67,11 +68,13 @@ def orders():
         """)
     print("Table created successfully")
 
+
 def profiles():
     cursor.execute("""
         CREATE TABLE profiles (profile_id varchar PRIMARY KEY);
         """)
     print("Table created successfully")
+
 
 def sessions():
     cursor.execute("""
@@ -80,6 +83,7 @@ def sessions():
         preference_sub_cat varchar, preference_sub_sub_cat varchar)
         """)
     print("Table created successfully")
+
 
 def tabellen():
     drop()
