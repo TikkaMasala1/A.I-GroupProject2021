@@ -14,11 +14,11 @@ cur = postgresConnection.cursor()
 # Intialiseert de databaseverbinding met MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["huwebshop"]
-col = db["products"]
 
 
 # Zet de gegevens van de mongo database om in een list van dictonary's
 def get_products_mongo():
+    col = db["products"]
     products_array = []
     data_raw = col.find({'category': {"$ne": None}}, {'_id': 1, 'name': 1,
                                                       'category': 1, 'sub_category': 1, 'sub_sub_category': 1,
@@ -52,19 +52,20 @@ def delete_table_products():
 # Maakt de benodigde tabel aan
 def create_table_products():
     cur.execute("""
-        CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY,product_name varchar, price int,
+        CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY, product_name varchar, price int,
         category varchar, sub_category varchar, sub_sub_category varchar);
         """)
     print("Table created successfully")
 
 
 # Insert de list van dictionary's in de postgres database
-def data_transfer():
+def data_transfer_products():
     cur.executemany("""INSERT INTO PRODUCTS(product_id,product_name,category,sub_category,sub_sub_category,price)
     VALUES (%(_id)s,%(name)s,%(category)s,%(sub_category)s,%(sub_sub_category)s,%(price)s)""", products_data)
+    print("Data transfer successful")
 
 
 products_data = get_products_mongo()
 delete_table_products()
 create_table_products()
-data_transfer()
+data_transfer_products()
