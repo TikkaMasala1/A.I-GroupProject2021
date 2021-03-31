@@ -141,4 +141,5 @@ cython_debug/
 
 # Misc files
 scratch.py
+.idea/
 
