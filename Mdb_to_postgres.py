@@ -16,8 +16,9 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client["huwebshop"]
 
 
-# Zet de gegevens van de mongo database om in een list van dictonary's
+# Zet de products van de mongo database om in een list van dictonary's
 def get_products_mongo():
+    print("Products data retrieval started")
     col = db["products"]
     products_array = []
     data_raw = col.find({'category': {"$ne": None}}, {'_id': 1, 'name': 1,
@@ -38,15 +39,16 @@ def get_products_mongo():
             for (key, value) in data['price'].items():
                 data['price'] = value
         products_array.append(data)
+    print("Products data retrieval successful\n")
     return products_array
 
 
-# Verwijderd de table, dit is voor testing doeleinde
+# Verwijderd de products table, dit is voor testing doeleinde
 def delete_table_products():
     cur.execute("""
         DROP TABLE if exists PRODUCTS;    
     """)
-    print("Product table deleted successfully")
+    print("Products table deleted successfully")
 
 
 # Maakt de products tabel aan
@@ -55,20 +57,66 @@ def create_table_products():
         CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY, product_name varchar, price int, gender varchar,
         category varchar, sub_category varchar, sub_sub_category varchar);
         """)
-    print("Product table created successfully")
+    print("Products table created successfully\n")
 
 
 # Insert de list van dictionary's in de postgres database
 def data_transfer_products():
+    print("Data transfer products started")
     cur.executemany("""INSERT INTO PRODUCTS(product_id,product_name,gender,category,sub_category,sub_sub_category,price)
     VALUES (%(_id)s,%(name)s,%(gender)s,%(category)s,%(sub_category)s,%(sub_sub_category)s,%(price)s)""", products_data)
-    print("Data transfer successful")
+    print("Data transfer products successful\n")
 
 
-products_data = get_products_mongo()
-delete_table_products()
-create_table_products()
-data_transfer_products()
-# data_transfer_sessions()
-cur.close()
-postgresConnection.close()
+# Pakt de id's van de verkochte products en zet die om in een dictionary
+def get_sessions_mongo():
+    print("Sessions data retrieval started")
+    col = db["sessions"]
+    order_array = []
+    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 1, 'order': {'products': {'id': 1}}})
+
+    # Dit gaat door de raw data heen en plukt alleen de benodigde id's eruit.
+    for data in data_raw:
+        if 'order' not in data:
+            continue
+        for x in data['order']['products']:
+            order_array.append(x)
+    print("Sessions data retrieval successful\n")
+    return order_array
+
+
+# Verwijderd de sessions table, dit is voor testing doeleinde
+def delete_table_sessions():
+    cur.execute("""
+        DROP TABLE if exists SESSIONS;    
+    """)
+    print("Session table deleted successfully")
+
+
+# Maakt de sessions tabel aan
+def create_table_sessions():
+    cur.execute("""
+        CREATE TABLE if not exists SESSIONS (session_id serial PRIMARY KEY, product_id varchar);
+        """)
+    print("Session table created successfully\n")
+
+
+# Insert de list van dictionary's, die de id's bevatten in postgres
+def data_transfer_sessions():
+    print("Data transfer sessions starting")
+    cur.executemany("""INSERT INTO SESSIONS(product_id)
+    VALUES (%(id)s)""", orders)
+    print("Data transfer sessions successful")
+
+
+if __name__ == '__main__':
+    products_data = get_products_mongo()
+    orders = get_sessions_mongo()
+    delete_table_products()
+    create_table_products()
+    data_transfer_products()
+    delete_table_sessions()
+    create_table_sessions()
+    data_transfer_sessions()
+    cur.close()
+    postgresConnection.close()
