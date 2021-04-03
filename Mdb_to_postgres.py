@@ -1,6 +1,7 @@
 from pymongo import MongoClient
-import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import psycopg2
+import json
 
 # Intialiseert de databaseverbinding met Postgres
 postgresConnection = psycopg2.connect(user="postgres",
@@ -61,28 +62,30 @@ def create_table_products():
 
 
 # Insert de list van dictionary's in de postgres database
-def data_transfer_products():
+def data_transfer_products(data):
     print("Data transfer products started")
     cur.executemany("""INSERT INTO PRODUCTS(product_id,product_name,gender,category,sub_category,sub_sub_category,price)
-    VALUES (%(_id)s,%(name)s,%(gender)s,%(category)s,%(sub_category)s,%(sub_sub_category)s,%(price)s)""", products_data)
+    VALUES (%(_id)s,%(name)s,%(gender)s,%(category)s,%(sub_category)s,%(sub_sub_category)s,%(price)s)""", data)
     print("Data transfer products successful\n")
 
 
-# Pakt de id's van de verkochte products en zet die om in een dictionary
 def get_sessions_mongo():
     print("Sessions data retrieval started")
     col = db["sessions"]
-    order_array = []
-    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 1, 'order': {'products': {'id': 1}}})
+    session_array = []
+    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 0, 'buid': 1, 'order': 1})
 
-    # Dit gaat door de raw data heen en plukt alleen de benodigde id's eruit.
+    # Dit gaat door de raw data heen en format het voor postgres.
     for data in data_raw:
-        if 'order' not in data:
-            continue
-        for x in data['order']['products']:
-            order_array.append(x)
+        if 'buid' in data and 'order' in data:
+            if data['buid'] is None:
+                continue
+            data['buid'] = data['buid'][0]
+            data['order'] = data['order']['products']
+            data['order'] = list(map(lambda x: json.dumps(x), data['order']))
+            session_array.append(data)
     print("Sessions data retrieval successful\n")
-    return order_array
+    return session_array
 
 
 # Verwijderd de sessions table, dit is voor testing doeleinde
@@ -96,27 +99,75 @@ def delete_table_sessions():
 # Maakt de sessions tabel aan
 def create_table_sessions():
     cur.execute("""
-        CREATE TABLE if not exists SESSIONS (session_id serial PRIMARY KEY, product_id varchar);
+        CREATE TABLE if not exists SESSIONS (session_id serial PRIMARY KEY, buid varchar,product_id varchar);
         """)
     print("Session table created successfully\n")
 
 
 # Insert de list van dictionary's, die de id's bevatten in postgres
-def data_transfer_sessions():
+def data_transfer_sessions(data):
     print("Data transfer sessions starting")
-    cur.executemany("""INSERT INTO SESSIONS(product_id)
-    VALUES (%(id)s)""", orders)
-    print("Data transfer sessions successful")
+    cur.executemany("""INSERT INTO SESSIONS(buid,product_id)
+    VALUES (%(buid)s, %(order)s)""", data)
+    print("Data transfer sessions successful\n")
+
+
+def get_profiles_mongo():
+    print("Profiles data retrieval started")
+    col = db["profiles"]
+    profile_array = []
+    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 0, 'buids': 1, 'recommendations.similars': 1})
+
+    # Dit gaat door de raw data heen en format het voor postgres.
+    for data in data_raw:
+        if 'buids' not in data or 'recommendations' not in data:
+            continue
+        if data['buids'] is None:
+            continue
+        data['recommendations'] = data['recommendations']['similars']
+        data['buids'] = list(map(lambda x: json.dumps(x), data['buids']))
+        data['recommendations'] = list(map(lambda x: json.dumps(x), data['recommendations']))
+        profile_array.append(data)
+    print("Profiles data retrieval successful\n")
+    return profile_array
+
+
+# Verwijderd de profiles table, dit is voor testing doeleinde
+def delete_table_profiles():
+    cur.execute("""
+        DROP TABLE if exists PROFILES;    
+    """)
+    print("Profile table deleted successfully")
+
+
+# Maakt de profiles tabel aan
+def create_table_profiles():
+    cur.execute("""
+        CREATE TABLE if not exists PROFILES (profile_id serial PRIMARY KEY, buids varchar, similars varchar);
+        """)
+    print("Profile table created successfully\n")
+
+
+# Insert de list van dictionary's in postgres
+def data_transfer_profiles(data):
+    print("Data transfer profiles started")
+    cur.executemany("""INSERT INTO PROFILES(buids,similars)
+    VALUES (%(buids)s, %(recommendations)s)""", data)
+    print("Data transfer profiles successful")
 
 
 if __name__ == '__main__':
-    products_data = get_products_mongo()
-    orders = get_sessions_mongo()
+    product_data = get_products_mongo()
+    session_data = get_sessions_mongo()
+    profile_data = get_profiles_mongo()
     delete_table_products()
     create_table_products()
-    data_transfer_products()
+    data_transfer_products(product_data)
     delete_table_sessions()
     create_table_sessions()
-    data_transfer_sessions()
+    data_transfer_sessions(session_data)
+    delete_table_profiles()
+    create_table_profiles()
+    data_transfer_profiles(profile_data)
     cur.close()
     postgresConnection.close()
