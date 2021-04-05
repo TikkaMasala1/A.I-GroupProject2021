@@ -80,6 +80,8 @@ def get_sessions_mongo():
         if 'buid' in data and 'order' in data:
             if data['buid'] is None:
                 continue
+            if data['order']['products'] is None:
+                continue
             data['buid'] = data['buid'][0]
             data['order'] = data['order']['products']
             data['order'] = list(map(lambda x: json.dumps(x), data['order']))
