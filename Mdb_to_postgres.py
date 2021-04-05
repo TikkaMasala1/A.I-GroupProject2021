@@ -79,6 +79,8 @@ def get_sessions_mongo():
     for data in data_raw:
         if 'order' not in data:
             continue
+        if data['order']['products'] is None:
+            continue
         for x in data['order']['products']:
             order_array.append(x)
     print("Sessions data retrieval successful\n")
