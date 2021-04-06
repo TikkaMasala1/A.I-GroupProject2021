@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from collections import Counter
+
 import psycopg2
 import json
 
@@ -155,22 +157,77 @@ def data_transfer_profiles(data):
     print("Data transfer profiles started")
     cur.executemany("""INSERT INTO PROFILES(buids,similars)
     VALUES (%(buids)s, %(recommendations)s)""", data)
-    print("Data transfer profiles successful")
+    print("Data transfer profiles successful\n")
+
+
+def get_pop_products_mongo():
+    print("Pop_products data retrieval started")
+    cur.execute('SELECT similars FROM profiles')
+    data = cur.fetchall()
+    counter_data = Counter(elem[0] for elem in data)
+
+    lst = []
+    for key in counter_data.keys():
+        key = key.replace('{', '')
+        key = key.replace('}', '')
+        key = key.split(',')
+        lst += key
+
+    sol = dict()
+    for _id in lst:
+        if _id in sol.keys():
+            sol[_id] += 1
+        else:
+            sol[_id] = 1
+
+    sorted_x = sorted(sol.items(), key=lambda kv: kv[1], reverse=True)
+    print("Pop_products data retrieval successful\n")
+    return sorted_x
+
+
+def delete_table_pop_products():
+    cur.execute("""
+        DROP TABLE if exists POP_PRODUCTS;
+    """)
+    print("Pop_products table deleted successfully")
+
+
+# Maakt de profiles tabel aan
+def create_table_pop_products():
+    cur.execute("""
+        CREATE TABLE if not exists POP_PRODUCTS (product_id varchar PRIMARY KEY, freq int);
+        """)
+    print("Pop_products table created successfully\n")
+
+
+# Insert de list van dictionary's in postgres
+def data_transfer_pop_products(data):
+    print("Data transfer pop_products started")
+    cur.executemany("""INSERT INTO POP_PRODUCTS(product_id,freq)
+    VALUES (%s, %s)""", data)
+    print("Data transfer pop_products successful")
 
 
 if __name__ == '__main__':
     product_data = get_products_mongo()
     session_data = get_sessions_mongo()
-    print(session_data)
     profile_data = get_profiles_mongo()
+    pop_products_data = get_pop_products_mongo()
+
     delete_table_products()
     create_table_products()
     data_transfer_products(product_data)
+
     delete_table_sessions()
     create_table_sessions()
     data_transfer_sessions(session_data)
+
     delete_table_profiles()
     create_table_profiles()
     data_transfer_profiles(profile_data)
+
+    delete_table_pop_products()
+    create_table_pop_products()
+    data_transfer_pop_products(pop_products_data)
     cur.close()
     postgresConnection.close()
