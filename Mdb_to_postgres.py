@@ -83,8 +83,7 @@ def get_sessions_mongo():
             if not data['order']['products']:
                 continue
             data['buid'] = data['buid'][0]
-            data['order'] = data['order']['products']
-            data['order'] = list(map(lambda x: json.dumps(x), data['order']))
+            data['order'] = [f['id'] for f in data['order']['products']]
             session_array.append(data)
     print("Sessions data retrieval successful\n")
     return session_array
@@ -129,8 +128,6 @@ def get_profiles_mongo():
         if not data['recommendations']['similars']:
             continue
         data['recommendations'] = data['recommendations']['similars']
-        data['buids'] = list(map(lambda x: json.dumps(x), data['buids']))
-        data['recommendations'] = list(map(lambda x: json.dumps(x), data['recommendations']))
         profile_array.append(data)
     print("Profiles data retrieval successful\n")
     return profile_array
