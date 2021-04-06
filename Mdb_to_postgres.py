@@ -82,6 +82,7 @@ def get_sessions_mongo():
                 continue
             if not data['order']:
                 continue
+            data['_id'] = str(data['_id'])
             data['buid'] = data['buid'][0]
             data['order'] = [f['id'] for f in data['order']['products']]
             session_array.append(data)
@@ -160,6 +161,7 @@ def data_transfer_profiles(data):
 if __name__ == '__main__':
     product_data = get_products_mongo()
     session_data = get_sessions_mongo()
+    print(session_data)
     profile_data = get_profiles_mongo()
     delete_table_products()
     create_table_products()
