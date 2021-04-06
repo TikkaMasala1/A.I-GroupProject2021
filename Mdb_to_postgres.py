@@ -78,9 +78,9 @@ def get_sessions_mongo():
     # Dit gaat door de raw data heen en format het voor postgres.
     for data in data_raw:
         if 'buid' in data and 'order' in data:
-            if data['buid'] is None:
+            if not data['buid']:
                 continue
-            if data['order']['products'] is None:
+            if not data['order']['products']:
                 continue
             data['buid'] = data['buid'][0]
             data['order'] = data['order']['products']
@@ -125,6 +125,8 @@ def get_profiles_mongo():
         if 'buids' not in data or 'recommendations' not in data:
             continue
         if data['buids'] is None:
+            continue
+        if not data['recommendations']['similars']:
             continue
         data['recommendations'] = data['recommendations']['similars']
         data['buids'] = list(map(lambda x: json.dumps(x), data['buids']))
