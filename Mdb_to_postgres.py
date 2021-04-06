@@ -73,14 +73,14 @@ def get_sessions_mongo():
     print("Sessions data retrieval started")
     col = db["sessions"]
     session_array = []
-    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 0, 'buid': 1, 'order': 1})
+    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 1, 'buid': 1, 'order': 1})
 
     # Dit gaat door de raw data heen en format het voor postgres.
     for data in data_raw:
         if 'buid' in data and 'order' in data:
             if not data['buid']:
                 continue
-            if not data['order']['products']:
+            if not data['order']:
                 continue
             data['buid'] = data['buid'][0]
             data['order'] = [f['id'] for f in data['order']['products']]
@@ -100,7 +100,7 @@ def delete_table_sessions():
 # Maakt de sessions tabel aan
 def create_table_sessions():
     cur.execute("""
-        CREATE TABLE if not exists SESSIONS (session_id serial PRIMARY KEY, buid varchar,product_id varchar);
+        CREATE TABLE if not exists SESSIONS (session_id varchar PRIMARY KEY, buid varchar,product_id varchar);
         """)
     print("Session table created successfully\n")
 
@@ -108,8 +108,8 @@ def create_table_sessions():
 # Insert de list van dictionary's, die de id's bevatten in postgres
 def data_transfer_sessions(data):
     print("Data transfer sessions starting")
-    cur.executemany("""INSERT INTO SESSIONS(buid,product_id)
-    VALUES (%(buid)s, %(order)s)""", data)
+    cur.executemany("""INSERT INTO SESSIONS(session_id, buid,product_id)
+    VALUES (%(_id)s, %(buid)s, %(order)s)""", data)
     print("Data transfer sessions successful\n")
 
 
