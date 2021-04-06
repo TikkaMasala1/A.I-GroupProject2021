@@ -162,7 +162,7 @@ def data_transfer_profiles(data):
 
 def get_pop_products_mongo():
     print("Pop_products data retrieval started")
-    cur.execute('SELECT similars FROM profiles')
+    cur.execute('SELECT product_id FROM sessions')
     data = cur.fetchall()
     counter_data = Counter(elem[0] for elem in data)
 
