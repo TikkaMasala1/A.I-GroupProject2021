@@ -7,7 +7,7 @@ import json
 
 # Intialiseert de databaseverbinding met Postgres
 postgresConnection = psycopg2.connect(user="postgres",
-                                      password="root",
+                                      password="groep6",
                                       host="127.0.0.1",
                                       port="5432",
                                       database="huwebshop")
@@ -195,7 +195,7 @@ def delete_table_pop_products():
 # Maakt de profiles tabel aan
 def create_table_pop_products():
     cur.execute("""
-        CREATE TABLE if not exists POP_PRODUCTS (product_id varchar PRIMARY KEY, freq int);
+        CREATE TABLE if not exists POP_PRODUCTS (product_id varchar PRIMARY KEY, freq int, nodup varchar);
         """)
     print("Pop_products table created successfully\n")
 
