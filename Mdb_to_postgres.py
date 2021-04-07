@@ -27,9 +27,10 @@ def get_products_mongo():
     products_array = []
     data_raw = col.find({'category': {"$ne": None}}, {'_id': 1, 'name': 1,
                                                       'category': 1, 'sub_category': 1, 'sub_sub_category': 1,
-                                                      'price': {'mrsp': 1, 'selling_price': 1}, 'gender': 1
+                                                      'price': {'discount': 1, 'mrsp': 1, 'selling_price': 1},
+                                                      'gender': 1
                                                       })
-    # Dit flattend de data
+    # Dit verplat de data
     data_raw_flat = nested_to_record(data_raw, sep='_')
     for data in data_raw_flat:
         # Sommige "sub_category", "sub_sub_category", "price_mrsp" en "price_selling_price"
@@ -41,10 +42,16 @@ def get_products_mongo():
             data['sub_sub_category'] = None
         if 'price_mrsp' not in data:
             data['price_mrsp'] = None
+            data['price_discount'] = None
         if 'price_selling_price' not in data:
             data['price_selling_price'] = None
+            data['price_discount'] = None
+        if data['price_selling_price'] == data['price_mrsp']:
+            data['price_discount'] = None
+        if data['price_discount'] is not None:
+            data['price_discount'] = round(
+                (((data['price_mrsp'] - data['price_selling_price']) / data['price_mrsp']) * 100))
         products_array.append(data)
-
     print("Products data retrieval successful\n")
     return products_array
 
@@ -61,7 +68,7 @@ def delete_table_products():
 def create_table_products():
     cur.execute("""
         CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY, product_name varchar, mrsp int,
-         selling_price int, gender varchar, category varchar, sub_category varchar, sub_sub_category varchar);
+         selling_price int, discount int , gender varchar, category varchar, sub_category varchar, sub_sub_category varchar);
         """)
     print("Products table created successfully\n")
 
@@ -69,9 +76,9 @@ def create_table_products():
 # Insert de list van dictionary's in de postgres database
 def data_transfer_products(data):
     print("Data transfer products started")
-    cur.executemany("""INSERT INTO PRODUCTS(product_id, product_name, mrsp, selling_price, gender, category,
+    cur.executemany("""INSERT INTO PRODUCTS(product_id, product_name, mrsp, selling_price, discount, gender, category,
     sub_category, sub_sub_category)
-     VALUES (%(_id)s,%(name)s,%(price_mrsp)s,%(price_selling_price)s,%(gender)s,%(category)s,%(sub_category)s,
+     VALUES (%(_id)s,%(name)s,%(price_mrsp)s,%(price_selling_price)s,%(price_discount)s,%(gender)s,%(category)s,%(sub_category)s,
      %(sub_sub_category)s)""", data)
     print("Data transfer products successful\n")
 
