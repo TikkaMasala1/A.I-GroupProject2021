@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from collections import Counter
+from pandas.io.json._normalize import nested_to_record
 
 import psycopg2
 import json
@@ -26,22 +27,24 @@ def get_products_mongo():
     products_array = []
     data_raw = col.find({'category': {"$ne": None}}, {'_id': 1, 'name': 1,
                                                       'category': 1, 'sub_category': 1, 'sub_sub_category': 1,
-                                                      'price': {'selling_price': 1}, 'gender': 1
+                                                      'price': {'mrsp': 1, 'selling_price': 1}, 'gender': 1
                                                       })
-
-    for data in data_raw:
-        # Sommige "sub_category" en "sub_sub_category" velden bevatten gegevens die fouten veroorzaken bij het invoegen
-        # in Postgres. Dit filtert de gegevens en vervangt ze met "None"
+    # Dit flattend de data
+    data_raw_flat = nested_to_record(data_raw, sep='_')
+    for data in data_raw_flat:
+        # Sommige "sub_category", "sub_sub_category", "price_mrsp" en "price_selling_price"
+        # velden bevatten gegevens die fouten veroorzaken bij het invoegen in Postgres.
+        # Dit filtert de gegevens en vervangt ze met "None"
         if 'sub_category' not in data:
             data['sub_category'] = None
         if 'sub_sub_category' not in data:
             data['sub_sub_category'] = None
-
-        # Het veld "price" is een nested dictionary, dit haalt de gegevens uit de nested dictionary.
-        if 'price' in data:
-            for (key, value) in data['price'].items():
-                data['price'] = value
+        if 'price_mrsp' not in data:
+            data['price_mrsp'] = None
+        if 'price_selling_price' not in data:
+            data['price_selling_price'] = None
         products_array.append(data)
+
     print("Products data retrieval successful\n")
     return products_array
 
@@ -57,8 +60,8 @@ def delete_table_products():
 # Maakt de products tabel aan
 def create_table_products():
     cur.execute("""
-        CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY, product_name varchar, price int, gender varchar,
-        category varchar, sub_category varchar, sub_sub_category varchar);
+        CREATE TABLE if not exists PRODUCTS (product_id varchar PRIMARY KEY, product_name varchar, mrsp int,
+         selling_price int, gender varchar, category varchar, sub_category varchar, sub_sub_category varchar);
         """)
     print("Products table created successfully\n")
 
@@ -66,8 +69,10 @@ def create_table_products():
 # Insert de list van dictionary's in de postgres database
 def data_transfer_products(data):
     print("Data transfer products started")
-    cur.executemany("""INSERT INTO PRODUCTS(product_id,product_name,gender,category,sub_category,sub_sub_category,price)
-    VALUES (%(_id)s,%(name)s,%(gender)s,%(category)s,%(sub_category)s,%(sub_sub_category)s,%(price)s)""", data)
+    cur.executemany("""INSERT INTO PRODUCTS(product_id, product_name, mrsp, selling_price, gender, category,
+    sub_category, sub_sub_category)
+     VALUES (%(_id)s,%(name)s,%(price_mrsp)s,%(price_selling_price)s,%(gender)s,%(category)s,%(sub_category)s,
+     %(sub_sub_category)s)""", data)
     print("Data transfer products successful\n")
 
 
@@ -125,12 +130,10 @@ def get_profiles_mongo():
 
     # Dit gaat door de raw data heen en format het voor postgres.
     for data in data_raw:
-        if 'buids' not in data or 'recommendations' not in data:
+        if 'buids' not in data or 'recommendations' not in data or data['buids'] is None \
+                or not data['recommendations']['similars']:
             continue
-        if data['buids'] is None:
-            continue
-        if not data['recommendations']['similars']:
-            continue
+
         data['recommendations'] = data['recommendations']['similars']
         profile_array.append(data)
     print("Profiles data retrieval successful\n")
