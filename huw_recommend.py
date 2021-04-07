@@ -1,9 +1,10 @@
 from flask import Flask, request, session, render_template, redirect, url_for, g
 from flask_restful import Api, Resource, reqparse
-import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import os
 import psycopg2
+import random
 
 app = Flask(__name__)
 api = Api(app)
@@ -65,16 +66,28 @@ class Recom(Resource):
 
             if recom_type == 1:
                 querypop = """SELECT (products.product_id) FROM products
-                                INNER JOIN pop_products on products.product_id = pop_products.product_id
-                                ORDER BY pop_products.freq DESC
-                                LIMIT 4;"""
-                c.execute(querypop)
-                product_raw = c.fetchall()
-                product = [i[0] for i in product_raw]
-                prodids += product
+                                                    INNER JOIN pop_products on products.product_id = pop_products.product_id
+                                                    ORDER BY pop_products.freq DESC
+                                                    LIMIT 10;"""
 
-            if recom_type == 1:
+                queryprice = """SELECT product_id, discount FROM products
+                                                     WHERE discount IS NOT NULL
+                                                     ORDER BY discount DESC
+                                                     limit 10;"""
+                c.execute(querypop)
+                products_best_seller_raw = c.fetchall()
+                products_best_seller_id = [i[0] for i in products_best_seller_raw]
+                products_best_seller_random = random.sample(products_best_seller_id, 5)
+
+                c.execute(queryprice)
+                products_best_price_raw = c.fetchall()
+                products_best_price_id = [i[0] for i in products_best_price_raw]
+                products_best_price_random = random.sample(products_best_price_id, 5)
+
+                products_combined = random.sample(products_best_seller_random + products_best_price_random, 1)
                 tel += 1
+                prodids += products_combined
+
         return prodids
 
 
