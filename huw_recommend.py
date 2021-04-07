@@ -10,7 +10,7 @@ app = Flask(__name__)
 api = Api(app)
 
 postgresConnection = psycopg2.connect(user="postgres",
-                                      password="root",
+                                      password="groep6",
                                       host="127.0.0.1",
                                       port="5432",
                                       database="huwebshop")
@@ -44,16 +44,24 @@ class Recom(Resource):
         # randcursor = database.products.aggregate([{ '$sample': { 'size': count } }])
         # prodids = list(map(lambda x: x['_id'], list(randcursor)))
         # return prodids, 200
+
         tel = 0
         prodids = []
         while tel != count:
             if recom_type == 0:
-                queryc = "SELECT category FROM products WHERE product_id LIKE CAST(" + productid + " AS varchar)"
+                queryc = "SELECT category FROM products WHERE product_id = '" + productid + "'"
                 c.execute(queryc)
                 category = c.fetchone()
-                queryg = "SELECT gender FROM products WHERE product_id LIKE CAST(" + productid + " AS varchar)"
+                querysub = "SELECT sub_category FROM products WHERE product_id = '" + productid + "'"
+                c.execute(querysub)
+                subcategory = c.fetchone()
+                querysubsub = "SELECT sub_sub_category FROM products WHERE product_id = '" + productid + "'"
+                c.execute(querysubsub)
+                subsubcategory = c.fetchone()
+                queryg = "SELECT gender FROM products WHERE product_id = '" + productid + "'"
                 c.execute(queryg)
                 gender = c.fetchone()
+
                 queryp = """SELECT product_id FROM products 
                                                 WHERE category LIKE '""" + category[0] + """' 
                                                 AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
@@ -61,8 +69,28 @@ class Recom(Resource):
                                                 ORDER BY random() LIMIT 1"""
                 c.execute(queryp)
                 product = c.fetchone()
-                tel += 1
                 prodids += product
+
+
+                querysubp= """SELECT product_id FROM products
+                                    WHERE sub_category LIKE '""" + subcategory[0]+"""'
+                                    AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                    AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                    ORDER BY random () LIMIT 1"""
+                c.execute(querysubp)
+                productsub = c.fetchone()
+                prodids += productsub
+
+                querysubsubp= """SELECT product_id FROM products
+                                        WHERE sub_sub_category LIKE '""" + subsubcategory[0] +"""'
+                                        AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                        AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                        ORDER BY random () LIMIT 1"""
+                c.execute(querysubsubp)
+                productsubsub = c.fetchone()
+                prodids += productsubsub
+                tel += 1
+
 
             if recom_type == 1:
                 querypop = """SELECT (products.product_id) FROM products
@@ -87,6 +115,9 @@ class Recom(Resource):
                 products_combined = random.sample(products_best_seller_random + products_best_price_random, 1)
                 tel += 1
                 prodids += products_combined
+
+
+
 
         return prodids
 
