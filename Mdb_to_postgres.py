@@ -133,7 +133,7 @@ def get_profiles_mongo():
     print("Profiles data retrieval started")
     col = db["profiles"]
     profile_array = []
-    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 0, 'buids': 1, 'recommendations.similars': 1})
+    data_raw = col.find({'has_sale': {"$ne": False}}, {'_id': 1, 'buids': 1, 'recommendations.similars': 1})
 
     # Dit gaat door de raw data heen en format het voor postgres.
     for data in data_raw:
@@ -142,6 +142,7 @@ def get_profiles_mongo():
             continue
 
         data['recommendations'] = data['recommendations']['similars']
+        data['_id'] = str(data['_id'])
         profile_array.append(data)
     print("Profiles data retrieval successful\n")
     return profile_array
@@ -158,7 +159,7 @@ def delete_table_profiles():
 # Maakt de profiles tabel aan
 def create_table_profiles():
     cur.execute("""
-        CREATE TABLE if not exists PROFILES (profile_id serial PRIMARY KEY, buids varchar, similars varchar);
+        CREATE TABLE if not exists PROFILES (profile_id varchar PRIMARY KEY, buids varchar, similars varchar);
         """)
     print("Profile table created successfully\n")
 
@@ -166,8 +167,8 @@ def create_table_profiles():
 # Insert de list van dictionary's in postgres
 def data_transfer_profiles(data):
     print("Data transfer profiles started")
-    cur.executemany("""INSERT INTO PROFILES(buids,similars)
-    VALUES (%(buids)s, %(recommendations)s)""", data)
+    cur.executemany("""INSERT INTO PROFILES(profile_id,buids,similars)
+    VALUES (%(_id)s,%(buids)s, %(recommendations)s)""", data)
     print("Data transfer profiles successful\n")
 
 
