@@ -61,31 +61,35 @@ class Recom(Resource):
             c.execute(queryg)
             gender = c.fetchone()
 
-            queryp = """SELECT product_id FROM products 
+            for i in range(0,int(count/2)):
+                queryp = """SELECT product_id FROM products 
                                             WHERE category LIKE '""" + category[0] + """' 
                                             AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
                                             AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
                                             ORDER BY random() LIMIT 1;"""
-            c.execute(queryp)
-            product = c.fetchone()
+                c.execute(queryp)
+                product = c.fetchone()
+                prodids += product
+                
+            for j in range(0, int(count / 4)):
+                querysubp =     """SELECT product_id FROM products
+                                            WHERE sub_category LIKE '""" + subcategory[0] + """'
+                                            AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                            AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                            ORDER BY random () LIMIT 1;"""
+                c.execute(querysubp)
+                productsub = c.fetchone()
+                prodids += productsub
 
-            querysubp = """SELECT product_id FROM products
-                                WHERE sub_category LIKE '""" + subcategory[0] + """'
-                                AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
-                                AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
-                                ORDER BY random () LIMIT 1;"""
-            c.execute(querysubp)
-            productsub = c.fetchone()
+                querysubsubp = """SELECT product_id FROM products
+                                            WHERE sub_sub_category LIKE '""" + subsubcategory[0] + """'
+                                            AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                            AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                            ORDER BY random () LIMIT 1;"""
+                c.execute(querysubsubp)
+                productsubsub = c.fetchone()
+                prodids += productsubsub
 
-            querysubsubp = """SELECT product_id FROM products
-                                    WHERE sub_sub_category LIKE '""" + subsubcategory[0] + """'
-                                    AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
-                                    AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
-                                    ORDER BY random () LIMIT 1;"""
-            c.execute(querysubsubp)
-            productsubsub = c.fetchone()
-            prod_comb = random.sample( product + productsub + productsubsub, 4)
-            prodids += prod_comb
             return prodids
 
         if recom_type == 1:
