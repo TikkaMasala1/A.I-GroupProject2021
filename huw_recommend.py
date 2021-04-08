@@ -70,7 +70,7 @@ class Recom(Resource):
                 c.execute(queryp)
                 product = c.fetchone()
                 prodids += product
-                
+
             for j in range(0, int(count / 4)):
                 querysubp =     """SELECT product_id FROM products
                                             WHERE sub_category LIKE '""" + subcategory[0] + """'
@@ -116,7 +116,46 @@ class Recom(Resource):
             prodids += products_combined
             return prodids
 
+        if recom_type == 2:
+            bought_prod = []
+            query_prof = ("""SELECT buids FROM profiles
+                                    WHERE profile_id = '%s'"""%(profileid))
+            c.execute(query_prof)
 
+            buid = c.fetchone()
+            for x in buid[0]:
+                segmentquery= ("""SELECT product_id FROM sessions
+                                                WHERE segment = "BUYER"
+                                                AND buid IS (%s)""", x)
+
+                c.execute(segmentquery)
+                bought= c.fetchone()
+                # bought product_ids added to a list
+                if bought is not None:
+                    for y in bought[0]:
+                        splity = y.split("'")[1]
+                        bought_prod.append(splity)
+                    else:
+                        continue
+            for z in range(0, int(count)):
+                # personal recommandation from the common bought products  in the shoppingcartpage
+                prod_pers = bought_prod[random.randint(0, len(bought_prod)-1)]
+                query_sub_sub_prod = """SELECT sub_sub_category FROM products
+                                                WHERE product_id = '"""+ prod_pers + "'"
+                c.execute= query_sub_sub_prod
+                sub_sub_cat_prod = c.fetchone()
+
+                query_gender= "SELECT gender FROM products WHERE productid ='"+ prod_pers + "'"
+                c.execute(query_gender)
+                gender_prod = c.fetchone()
+
+                query_sub_sub_pers = """SELECT product_id FROM products
+                                        WHERE sub_sub_category ='""" + sub_sub_cat_prod[0]+"""'
+                                        ORDER BY random () LIMIT 1 """
+                c.execute(query_sub_sub_pers)
+                personal_prod = c.fetchone()
+                prodids += personal_prod
+        return prodids
 
 # This method binds the Recom class to the REST API, to parse specifically
 # requests in the format described below.
