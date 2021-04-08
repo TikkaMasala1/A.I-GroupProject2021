@@ -45,81 +45,73 @@ class Recom(Resource):
         # prodids = list(map(lambda x: x['_id'], list(randcursor)))
         # return prodids, 200
 
-        tel = 0
+
         prodids = []
-        while tel != count:
-            if recom_type == 0:
-                queryc = "SELECT category FROM products WHERE product_id = '" + productid + "'"
-                c.execute(queryc)
-                category = c.fetchone()
-                querysub = "SELECT sub_category FROM products WHERE product_id = '" + productid + "'"
-                c.execute(querysub)
-                subcategory = c.fetchone()
-                querysubsub = "SELECT sub_sub_category FROM products WHERE product_id = '" + productid + "'"
-                c.execute(querysubsub)
-                subsubcategory = c.fetchone()
-                queryg = "SELECT gender FROM products WHERE product_id = '" + productid + "'"
-                c.execute(queryg)
-                gender = c.fetchone()
+        if recom_type == 0:
+            queryc = "SELECT category FROM products WHERE product_id = '" + productid + "'"
+            c.execute(queryc)
+            category = c.fetchone()
+            querysub = "SELECT sub_category FROM products WHERE product_id = '" + productid + "'"
+            c.execute(querysub)
+            subcategory = c.fetchone()
+            querysubsub = "SELECT sub_sub_category FROM products WHERE product_id = '" + productid + "'"
+            c.execute(querysubsub)
+            subsubcategory = c.fetchone()
+            queryg = "SELECT gender FROM products WHERE product_id = '" + productid + "'"
+            c.execute(queryg)
+            gender = c.fetchone()
 
-                queryp = """SELECT product_id FROM products 
-                                                WHERE category LIKE '""" + category[0] + """' 
-                                                AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
-                                                AND gender LIKE '""" + gender[0] + """'
-                                                ORDER BY random() LIMIT 1"""
-                c.execute(queryp)
-                product = c.fetchone()
-                prodids += product
+            queryp = """SELECT product_id FROM products 
+                                            WHERE category LIKE '""" + category[0] + """' 
+                                            AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                            AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                            ORDER BY random() LIMIT 1;"""
+            c.execute(queryp)
+            product = c.fetchone()
 
+            querysubp = """SELECT product_id FROM products
+                                WHERE sub_category LIKE '""" + subcategory[0] + """'
+                                AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
+                                AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
+                                ORDER BY random () LIMIT 1;"""
+            c.execute(querysubp)
+            productsub = c.fetchone()
 
-                querysubp= """SELECT product_id FROM products
-                                    WHERE sub_category LIKE '""" + subcategory[0]+"""'
+            querysubsubp = """SELECT product_id FROM products
+                                    WHERE sub_sub_category LIKE '""" + subsubcategory[0] + """'
                                     AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
                                     AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
-                                    ORDER BY random () LIMIT 1"""
-                c.execute(querysubp)
-                productsub = c.fetchone()
-                prodids += productsub
+                                    ORDER BY random () LIMIT 1;"""
+            c.execute(querysubsubp)
+            productsubsub = c.fetchone()
+            prod_comb = random.sample( product + productsub + productsubsub, 4)
+            prodids += prod_comb
+            return prodids
 
-                querysubsubp= """SELECT product_id FROM products
-                                        WHERE sub_sub_category LIKE '""" + subsubcategory[0] +"""'
-                                        AND product_id NOT LIKE CAST(""" + productid + """ AS varchar)
-                                        AND gender LIKE '""" + gender[0] + """' OR gender LIKE 'Unisex'
-                                        ORDER BY random () LIMIT 1"""
-                c.execute(querysubsubp)
-                productsubsub = c.fetchone()
-                prodids += productsubsub
-                tel += 1
+        if recom_type == 1:
+            querypop = """SELECT (products.product_id) FROM products
+                                                INNER JOIN pop_products on products.product_id = pop_products.product_id
+                                                ORDER BY pop_products.freq DESC
+                                                LIMIT 10;"""
 
+            queryprice = """SELECT product_id, discount FROM products
+                                                 WHERE discount IS NOT NULL
+                                                 ORDER BY discount DESC
+                                                 limit 10;"""
+            c.execute(querypop)
+            products_best_seller_raw = c.fetchall()
+            products_best_seller_id = [i[0] for i in products_best_seller_raw]
+            products_best_seller_random = random.sample(products_best_seller_id, 5)
 
-            if recom_type == 1:
-                querypop = """SELECT (products.product_id) FROM products
-                                                    INNER JOIN pop_products on products.product_id = pop_products.product_id
-                                                    ORDER BY pop_products.freq DESC
-                                                    LIMIT 10;"""
+            c.execute(queryprice)
+            products_best_price_raw = c.fetchall()
+            products_best_price_id = [i[0] for i in products_best_price_raw]
+            products_best_price_random = random.sample(products_best_price_id, 5)
 
-                queryprice = """SELECT product_id, discount FROM products
-                                                     WHERE discount IS NOT NULL
-                                                     ORDER BY discount DESC
-                                                     limit 10;"""
-                c.execute(querypop)
-                products_best_seller_raw = c.fetchall()
-                products_best_seller_id = [i[0] for i in products_best_seller_raw]
-                products_best_seller_random = random.sample(products_best_seller_id, 5)
+            products_combined = random.sample(products_best_seller_random + products_best_price_random, 4)
+            prodids += products_combined
+            return prodids
 
-                c.execute(queryprice)
-                products_best_price_raw = c.fetchall()
-                products_best_price_id = [i[0] for i in products_best_price_raw]
-                products_best_price_random = random.sample(products_best_price_id, 5)
-
-                products_combined = random.sample(products_best_seller_random + products_best_price_random, 1)
-                tel += 1
-                prodids += products_combined
-
-
-
-
-        return prodids
 
 
 # This method binds the Recom class to the REST API, to parse specifically
